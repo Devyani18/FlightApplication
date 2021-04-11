@@ -1,0 +1,232 @@
+*** Settings ***
+Library           SeleniumLibrary
+Library           ExcelRobot
+
+*** Variables ***
+${element}        ${EMPTY}
+${loginID}        ${EMPTY}
+${password}       ${EMPTY}
+${TextfieldToClear}    ${EMPTY}
+${excelPath}      ${EMPTY}
+${sheetName}      ${EMPTY}
+${rowName}        ${EMPTY}
+${colName}        ${EMPTY}
+${ncolumns}       ${EMPTY}
+${iexcelData}     ${EMPTY}
+${excelData}      ${EMPTY}
+${requiredColumn}    ${EMPTY}
+${nrows}          ${EMPTY}
+${requiredRow}    ${EMPTY}
+${requiredExcelData}    ${EMPTY}
+${frameID}        ${EMPTY}
+${TabName}        ${EMPTY}
+@{cities}
+${city}           ${EMPTY}
+${ExpectedFromCities}    Toronto New York Chicago London
+${ExpectedToCities}    Paris Tokyo Mumbai Atlanta
+${class}          ${EMPTY}
+@{classes}
+${ExpectedClasses}    Economy Business First
+${FlightNumber}    ${EMPTY}
+${FlightToAndFrom}    ${EMPTY}
+
+*** Keywords ***
+NavigateToURL
+    Open Browser    https://ngendigital.com/demo-application    chrome
+    Maximize Browser Window
+    Element Text Should Be    xpath://span[contains(text(),'Login to Flight Application')]    Login to Flight Application
+
+SwitchToiFrame
+    [Arguments]    ${frameID}
+    Select Frame    ${frameID}
+
+LoginPageObjectsVerification
+    Element Text Should Be    xpath://div[@class='box']/h1    My Account
+    Page Should Contain Textfield    xpath://input[@name='email']
+    Page Should Contain Textfield    xpath://input[@name='passwd']
+    Page Should Contain Element    xpath://div[@name='SignIn']
+    Page Should Contain Element    id=btn2
+    Page Should Contain Element    xpath://u[text()='Click Here!']
+    Page Should Contain Element    xpath://p[contains(text(),"Forgot your password?")]
+
+DefaultValuesVerificationLoginPage
+    Element Attribute Value Should Be    xpath://input[@name='email']    value    email
+    Element Attribute Value Should Be    xpath://input[@name='passwd']    type    password
+
+VerifyPageContains
+    [Arguments]    ${element}
+    Wait Until Keyword Succeeds    2    1    Page Should Contain Element    ${element}
+
+EnterLoginID
+    [Arguments]    ${loginID}
+    Set Global Variable    ${loginID}
+    Input Text    xpath://input[@name='email']    ${loginID}
+
+EnterPassword
+    [Arguments]    ${password}
+    Set Global Variable    ${password}
+    Input Password    xpath://input[@name='passwd']    ${password}
+
+ClearTextField
+    [Arguments]    ${TextfieldToClear}
+    Set Global Variable    ${TextfieldToClear}
+    Clear Element Text    ${TextfieldToClear}
+
+SignIn
+    Page Should Contain Element    xpath://div[@name='SignIn']
+    Click Element    xpath://div[@name='SignIn']
+
+VerifyMissingUsernameMsg
+    ${LoginValidationMsg}    Get Text    css:#MissingUname p label
+    Run Keyword If    '${LoginValidationMsg}'=='Please enter username'    Log    ${LoginValidationMsg}
+
+VerifyMissingPasswordMsg
+    ${LoginValidationMsg}    Get Text    css:#MissingPasswd p label
+    Run Keyword If    '${LoginValidationMsg}'=='Please enter password'    Log    ${LoginValidationMsg}
+
+VerifyMissingEmailAndPasswordMsg
+    ${LoginValidationMsg}    Get Text    css:#MissingUnamePasswd p label
+    Run Keyword If    '${LoginValidationMsg}'=='Please enter username and password'    Log    ${LoginValidationMsg}
+
+VerifyInvalidLoginMsg
+    ${status}    Run Keyword And Return Status    Page Should Contain Element    css:#InvalidLogin p label
+    @{LoginValidationMsg}    Run Keyword And Ignore Error    Get Text    css:#InvalidLogin p label
+    ${LoginValidationMsg}    Set Variable If    ${status}==True    ${LoginValidationMsg}[1]    1
+    [Return]    ${LoginValidationMsg}
+
+GetDataFromExcel
+    [Arguments]    ${excelPath}    ${sheetName}    ${rowName}    ${colName}
+    Open Excel    ${excelPath}
+    ${ncolumns}    Get Column Count    ${sheetName}
+    FOR    ${iexcelData}    IN RANGE    0    ${ncolumns}
+        ${excelData}    Read Cell Data    ${sheetName}    ${iexcelData}    0
+        ${requiredColumn}    Set Variable If    '${excelData}'=='${colName}'    ${iexcelData}
+        Exit For Loop If    '${excelData}'=='${colName}'
+    END
+    ${iexcelData}    Set Variable    1
+    ${nrows}    Get Row Count    ${sheetName}
+    FOR    ${iexcelData}    IN RANGE    1    ${nrows}
+        ${excelData}    Read Cell Data    ${sheetName}    0    ${iexcelData}
+        ${requiredRow}    Set Variable If    '${excelData}'=='${rowName}'    ${iexcelData}
+        Exit For Loop If    '${excelData}'=='${rowName}'
+    END
+    ${requiredExcelData}    Read Cell Data    ${sheetName}    ${requiredColumn}    ${requiredRow}
+    [Return]    ${requiredExcelData}
+
+PostLoginElementsVerification
+    Page Should Contain Element    xpath://font[contains(text(),'Book your Flight')]
+    Page Should Contain Element    id=defaultOpen
+    Page Should Contain Element    css:[name='Booking']
+    Page Should Contain Element    xpath://button[contains(text(),'Check in')]
+    Page Should Contain Element    xpath://button[contains(text(),'Log out')]
+
+SwitchToTab
+    [Arguments]    ${TabName}
+    Click Element    xpath://button[contains(text(),'${TabName}')]
+
+ManageBookingTabElementsVerification
+    VerifyPageContains    css:#FromCity
+    VerifyPageContains    css:#ToCity
+    VerifyPageContains    css:#goDate
+    VerifyPageContains    css:#returnDate
+    VerifyPageContains    css:#Class
+    VerifyPageContains    css:[name='roundtrip']
+    VerifyPageContains    css:#flight
+    VerifyPageContains    css:#flighthotel
+    VerifyPageContains    xpath://button[contains(text(),'Get Fare')]
+
+VerifyFromCities
+    VerifyPageContains    css:#FromCity
+    Click Element    css:#FromCity
+    @{cities}    Get List Items    css:#FromCity
+    FOR    ${city}    IN    @{cities}
+        Should Contain    ${ExpectedFromCities}    ${city}
+    END
+
+Logout
+    Click Element    xpath://button[contains(text(),'Log out')]
+    Page Should Contain Element    xpath://span[contains(text(),'Login to Flight Application')]
+
+VerifyToCities
+    VerifyPageContains    css:#ToCity
+    Click Element    css:#ToCity
+    @{cities}    Get List Items    css:#ToCity
+    FOR    ${city}    IN    @{cities}
+        Should Contain    ${ExpectedToCities}    ${city}
+    END
+
+VerifyFlightClass
+    VerifyPageContains    css:#Class
+    Click Element    css:#Class
+    @{classes}    Get List Items    css:#Class
+    FOR    ${class}    IN    @{classes}
+        Should Contain    ${ExpectedClasses}    ${class}
+    END
+
+SelectFlightOnly
+    Radio Button Should Not Be Selected    flight
+    Select Radio Button    flight    flight
+    Run Keyword And Expect Error    STARTS:Selection of radio button    Radio Button Should Be Set To    flight    flighthotel
+
+SelectFromCity
+    [Arguments]    ${city}
+    List Selection Should Be    css:#FromCity    ${city}
+
+SelectToCity
+    [Arguments]    ${city}
+    List Selection Should Be    css:#ToCity    ${city}
+
+SelectClass
+    [Arguments]    ${class}
+    List Selection Should Be    css:#Class    ${class}
+
+SelectStartDate
+    [Arguments]    ${date}
+    Input Text    css:#goDate    ${date}
+
+SelectReturnDate
+    [Arguments]    ${date}
+    Input Text    css:#returnDate    ${date}
+
+SelectRoundTrip
+    Select Checkbox    css:[name='roundtrip']
+
+SelectFlightAndHotel
+    Radio Button Should Not Be Selected    flight
+    Select Radio Button    flight    flighthotel
+    Radio Button Should Be Set To    flight    flighthotel
+
+ConfirmBookingAndVerify
+    Click Element    css:#confirm
+    Page Should Contain    SUCCESS !! Your flight is booked
+
+GetFare
+    Click Element    xpath://button[contains(text(),'Get Fare')]
+
+SearchFlightsTabElementsVerification
+    Page Should Contain Element    css:#FlightNo
+    Page Should Contain Button    css:#Search button
+
+SearchFlightByFlightNumber
+    [Arguments]    ${FlightNumber}
+    Page Should Contain Element    xpath://input[@id='FlightNo']
+    Input Text    xpath://input[@id='FlightNo']    ${FlightNumber}
+    Click Button    xpath://div[@id='Search']/p[5]/button
+
+VerifyFlightTableColumns
+    [Arguments]    ${FlightToAndFrom}
+    Element Should Contain    //div[@id='Status']/p/table/tbody/tr/th[1]    ${FlightToAndFrom}
+    Element Should Contain    //div[@id='Status']/p/table/tbody/tr/th[2]    Terminal
+    Element Should Contain    //div[@id='Status']/p/table/tbody/tr/th[3]    Scheduled
+    Element Should Contain    //div[@id='Status']/p/table/tbody/tr/th[4]    Departed
+
+VerifyValidFlightNumber
+    [Arguments]    ${FlightNumber}
+    ${status}    Run Keyword And Return Status    Page Should Not Contain    Flight number not entered or doesn't match any flight!
+    Run Keyword If    ${status}    Log To Console    Valid Flight
+    Run Keyword Unless    ${status}    Log To Console    Invalid Flight Number
+
+VerifyOnTimeDeparture
+    [Arguments]    ${FlightNumber}
+    SearchFlightByFlightNumber    ${FlightNumber}
+    Element Should Contain    //div[@id='Status']/p/table/tbody/tr[2]/td[4]    On time

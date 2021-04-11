@@ -1,0 +1,21 @@
+*** Settings ***
+Library           DatabaseLibrary
+
+*** Variables ***
+${column}         ${EMPTY}
+${id}             ${EMPTY}
+${result}         ${EMPTY}
+@{list}
+@{queryResult}
+
+*** Keywords ***
+GetValueBasedOnID
+    [Arguments]    ${column}    ${id}
+    @{queryResult}    Query    select ${column} from LOGIN where ID=${id}
+    @{list}    Convert To List    @{queryResult}
+    ${result}    Remove String    @{list}    ${SPACE}
+    [Return]    ${result}
+
+InsertValueBasedOnID
+    [Arguments]    ${message}    ${id}
+    Execute Sql String    update dbo.LOGIN SET Message = '${message}' where ID=${id}

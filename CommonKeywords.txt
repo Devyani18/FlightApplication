@@ -1,0 +1,25 @@
+*** Settings ***
+Library           SeleniumLibrary
+Library           ExcelRobot
+
+*** Variables ***
+${username}       ${EMPTY}
+${password}       ${EMPTY}
+${ReceivedMsg}    ${EMPTY}
+
+*** Keywords ***
+LoginFlightApplication
+    Set Global Variable    ${username}
+    Set Global Variable    ${password}
+    Open Excel    excelDemo.xls
+    ${username}    Read Cell Data    excelDemo    2    1
+    ${password}    Read Cell Data    excelDemo    1    1
+    Input Text    css:input[type='email']    ${username}
+    Input Password    css:input[type='password']    ${password}
+    Click Element    css:div[class='btn']
+
+WriteToExcel
+    [Arguments]    ${ReceivedMsg}
+    Open Excel To Write    D:/Study/Automation/ExcelData/excelDemo.xls
+    Write To Cell By Name    excelDemo    H2    Invalid credentials
+    Save Excel
